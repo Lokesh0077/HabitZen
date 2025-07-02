@@ -22,9 +22,10 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div 
             className="fixed inset-0 -z-10 h-full w-full bg-cover bg-center" 
-            style={{backgroundImage: "url('https://storage.googleapis.com/maker-studio-5f2c6.appspot.com/prompt_images/anonymous/1723466185122.png')"}}
+            style={{backgroundImage: "url('https://images.pexels.com/photos/1766838/pexels-photo-1766838.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"}}
+            data-ai-hint="calm organized"
         />
-        <div className="fixed inset-0 -z-10 h-full w-full bg-background/70 backdrop-blur-sm" />
+        <div className="fixed inset-0 -z-10 h-full w-full bg-background/80 backdrop-blur-sm" />
         {children}
         <Toaster />
       </body>
