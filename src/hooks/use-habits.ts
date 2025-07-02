@@ -15,44 +15,23 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
   const today = new Date();
   let currentDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-  
-  // Count backwards from today (or yesterday if not completed today).
+  const todayStr = currentDate.toISOString().split('T')[0];
+
+  // If the habit is not completed today, check for a streak ending yesterday.
+  if (!completions[todayStr]) {
+      currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  // Count backwards from `currentDate`
   while (true) {
     const dateStr = currentDate.toISOString().split('T')[0];
     if (completions[dateStr]) {
       streak++;
-      currentDate.setDate(currentDate.getDate() - 1); // Move to the previous day
+      currentDate.setDate(currentDate.getDate() - 1);
     } else {
-      // If no completion today, check if the streak ended yesterday.
-      const yesterday = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      if (streak > 0 || !completions[yesterdayStr]) {
-        break; // Streak is broken or never started
-      } else {
-        // Handle case where it's not completed today, but might have a streak ending yesterday
-        currentDate.setDate(currentDate.getDate() - 1);
-      }
+      break;
     }
   }
-
-  // A special check for the very first completion
-  if (streak === 0 && completions[getTodayDateString()]) {
-    return 1;
-  }
-  
-  // If not completed today, the streak is for past consecutive days.
-  if(!completions[getTodayDateString()]) {
-    let pastStreak = 0;
-    let pastDate = new Date();
-    pastDate.setDate(pastDate.getDate() - 1);
-    while(completions[pastDate.toISOString().split('T')[0]]) {
-      pastStreak++;
-      pastDate.setDate(pastDate.getDate() - 1);
-    }
-    return pastStreak;
-  }
-
 
   return streak;
 };
@@ -60,6 +39,13 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -82,6 +68,51 @@ export const useHabits = () => {
       }
     }
   }, [habits, isLoaded]);
+
+  useEffect(() => {
+    if (notificationPermission !== 'granted' || typeof window === 'undefined' || !('Notification' in window)) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const today = getTodayDateString();
+      const todayJsDate = new Date();
+      const dayOfWeekIndex = todayJsDate.getDay();
+      const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayDayName = daysOfWeek[dayOfWeekIndex];
+
+      habits.forEach(habit => {
+        const isForToday = !habit.days || habit.days.length === 0 || habit.days.includes(todayDayName);
+        const isCompleted = habit.completions[today];
+
+        if (habit.time === currentTime && isForToday && !isCompleted) {
+          new Notification('HabitZen Reminder', {
+            body: `It's time for your habit: "${habit.name}"`,
+            icon: '/favicon.ico'
+          });
+        }
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [habits, notificationPermission]);
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setNotificationPermission('granted');
+        return;
+      }
+      if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
+      } else {
+        setNotificationPermission('denied');
+      }
+    }
+  }, []);
 
   const addHabit = useCallback((name: string, settings: { time?: string; days?: Day[] }) => {
     if (name.trim() === '') return;
@@ -124,7 +155,7 @@ export const useHabits = () => {
     );
   }, []);
 
-  return { habits, addHabit, addSuggestedHabits, deleteHabit, toggleHabit, isLoaded, calculateStreak, getTodayDateString };
+  return { habits, addHabit, addSuggestedHabits, deleteHabit, toggleHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission };
 };
 
 // Dummy uuidv4 implementation if 'uuid' package is not available. For browser environment it is better to use crypto.randomUUID

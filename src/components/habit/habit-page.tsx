@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,14 +9,15 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function HabitPage() {
-  const { habits, addHabit, addSuggestedHabits, toggleHabit, deleteHabit, isLoaded, calculateStreak, getTodayDateString } = useHabits();
+  const { habits, addHabit, addSuggestedHabits, toggleHabit, deleteHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission } = useHabits();
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitTime, setNewHabitTime] = useState('');
   const [selectedDays, setSelectedDays] = useState<Day[]>([]);
@@ -64,6 +66,40 @@ export function HabitPage() {
     );
   };
   
+  const renderNotificationButton = () => {
+    if (notificationPermission === 'granted') {
+      return (
+        <Button variant="outline" className="flex-1 min-w-[150px]" disabled>
+          <Bell className="w-4 h-4 mr-2" />
+          Notifications On
+        </Button>
+      );
+    }
+    if (notificationPermission === 'denied') {
+      return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" className="flex-1 min-w-[150px]" disabled>
+                        <Bell className="w-4 h-4 mr-2" />
+                        Notifications Blocked
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>You have blocked notifications. Please enable them in your browser settings.</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return (
+      <Button variant="outline" className="flex-1 min-w-[150px]" onClick={requestNotificationPermission}>
+        <Bell className="w-4 h-4 mr-2" />
+        Enable Notifications
+      </Button>
+    );
+  };
+
   return (
     <div className="flex justify-center w-full min-h-screen p-4 font-body sm:p-6 md:p-8">
       <div className="w-full max-w-2xl space-y-6">
@@ -123,12 +159,13 @@ export function HabitPage() {
                     </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button type="submit" disabled={!newHabitName.trim()} className="flex-grow"><Plus className="w-4 h-4 mr-2" /> Add Habit</Button>
-                <Button variant="outline" className="flex-grow sm:flex-grow-0" onClick={() => setSuggestionDialogOpen(true)}>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={!newHabitName.trim()} className="flex-1 min-w-[150px]"><Plus className="w-4 h-4 mr-2" /> Add Habit</Button>
+                <Button variant="outline" className="flex-1 min-w-[150px]" onClick={() => setSuggestionDialogOpen(true)}>
                   <Wand2 className="w-4 h-4 mr-2" />
                   Get AI suggestions
                 </Button>
+                {renderNotificationButton()}
               </div>
             </form>
           </CardContent>
