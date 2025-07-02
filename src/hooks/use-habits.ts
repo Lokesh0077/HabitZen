@@ -13,11 +13,18 @@ const getTodayDateString = () => {
 
 const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
-  const today = new Date();
-  let currentDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+  let currentDate = new Date();
 
+  // If the habit isn't done today, the current streak is what it was yesterday.
+  // So we start counting from yesterday.
+  const todayStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  if (!completions[todayStr]) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  // Count backwards from the starting date (today or yesterday)
   while (true) {
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const dateStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
     if (completions[dateStr]) {
       streak++;
       currentDate.setDate(currentDate.getDate() - 1);
@@ -28,6 +35,7 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
 
   return streak;
 };
+
 
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
