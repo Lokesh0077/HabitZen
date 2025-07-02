@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Habit } from '@/lib/types';
+import type { Habit, Day } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const getTodayDateString = () => {
@@ -15,23 +15,44 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
   const today = new Date();
   let currentDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-  const todayStr = currentDate.toISOString().split('T')[0];
-
-  // If the habit isn't completed today, check the streak ending yesterday.
-  if (!completions[todayStr]) {
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-
-  // Count backwards from the current date.
+  
+  // Count backwards from today (or yesterday if not completed today).
   while (true) {
     const dateStr = currentDate.toISOString().split('T')[0];
     if (completions[dateStr]) {
       streak++;
       currentDate.setDate(currentDate.getDate() - 1); // Move to the previous day
     } else {
-      break; // The streak is broken
+      // If no completion today, check if the streak ended yesterday.
+      const yesterday = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      if (streak > 0 || !completions[yesterdayStr]) {
+        break; // Streak is broken or never started
+      } else {
+        // Handle case where it's not completed today, but might have a streak ending yesterday
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
     }
   }
+
+  // A special check for the very first completion
+  if (streak === 0 && completions[getTodayDateString()]) {
+    return 1;
+  }
+  
+  // If not completed today, the streak is for past consecutive days.
+  if(!completions[getTodayDateString()]) {
+    let pastStreak = 0;
+    let pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 1);
+    while(completions[pastDate.toISOString().split('T')[0]]) {
+      pastStreak++;
+      pastDate.setDate(pastDate.getDate() - 1);
+    }
+    return pastStreak;
+  }
+
 
   return streak;
 };
@@ -62,13 +83,15 @@ export const useHabits = () => {
     }
   }, [habits, isLoaded]);
 
-  const addHabit = useCallback((name: string) => {
+  const addHabit = useCallback((name: string, settings: { time?: string; days?: Day[] }) => {
     if (name.trim() === '') return;
     const newHabit: Habit = {
       id: uuidv4(),
       name: name.trim(),
       completions: {},
       createdAt: new Date().toISOString(),
+      time: settings.time || undefined,
+      days: settings.days && settings.days.length > 0 ? settings.days : undefined,
     };
     setHabits(prev => [...prev, newHabit]);
   }, []);
