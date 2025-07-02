@@ -22,8 +22,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div 
             className="fixed inset-0 -z-10 h-full w-full bg-cover bg-center" 
-            style={{backgroundImage: "url('https://placehold.co/1920x1080.png')"}}
-            data-ai-hint="abstract gold red"
+            style={{backgroundImage: "url('https://storage.googleapis.com/maker-studio-5f2c6.appspot.com/prompt_images/anonymous/1723466185122.png')"}}
         />
         <div className="fixed inset-0 -z-10 h-full w-full bg-background/70 backdrop-blur-sm" />
         {children}
