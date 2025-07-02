@@ -15,40 +15,22 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
   const today = new Date();
   let currentDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-
-  // Check if today is completed
   const todayStr = currentDate.toISOString().split('T')[0];
-  if (completions[todayStr]) {
-    streak++;
-  } else {
-    // If today is not complete, check from yesterday
+
+  // If the habit isn't completed today, check the streak ending yesterday.
+  if (!completions[todayStr]) {
     currentDate.setDate(currentDate.getDate() - 1);
   }
 
+  // Count backwards from the current date.
   while (true) {
     const dateStr = currentDate.toISOString().split('T')[0];
     if (completions[dateStr]) {
       streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
+      currentDate.setDate(currentDate.getDate() - 1); // Move to the previous day
     } else {
-      break;
+      break; // The streak is broken
     }
-  }
-
-  // Correction if today wasn't completed
-  if (!completions[todayStr]) {
-      streak = 0;
-      currentDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-      currentDate.setDate(currentDate.getDate() - 1);
-      while (true) {
-        const dateStr = currentDate.toISOString().split('T')[0];
-        if (completions[dateStr]) {
-          streak++;
-          currentDate.setDate(currentDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
   }
 
   return streak;
