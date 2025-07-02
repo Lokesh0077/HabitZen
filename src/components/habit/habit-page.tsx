@@ -107,7 +107,7 @@ export function HabitPage() {
                   <div className="flex-grow ml-4">
                     <p className={`font-semibold text-lg ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{habit.name}</p>
                     <div className="flex items-center text-muted-foreground mt-1">
-                      <Flame className={`h-4 w-4 mr-1 ${streak > 0 ? 'text-amber-500' : ''}`} />
+                      <Flame className={`h-4 w-4 mr-1 ${streak > 0 ? 'text-primary' : ''}`} />
                       <span>{streak} day streak</span>
                     </div>
                   </div>
