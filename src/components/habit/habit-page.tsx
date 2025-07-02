@@ -40,7 +40,7 @@ export function HabitPage() {
           className="-z-10 object-cover"
           data-ai-hint="abstract gold red"
       />
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
       <div className="relative z-10 flex justify-center w-full min-h-screen p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-2xl space-y-6">
           <header className="text-center">
