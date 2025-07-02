@@ -88,10 +88,44 @@ export default {
             height: '0',
           },
         },
+        'tada': {
+          'from': { transform: 'scale3d(1, 1, 1)' },
+          '10%, 20%': { transform: 'scale3d(0.9, 0.9, 0.9) rotate3d(0, 0, 1, -3deg)' },
+          '30%, 50%, 70%, 90%': { transform: 'scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, 3deg)' },
+          '40%, 60%, 80%': { transform: 'scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, -3deg)' },
+          'to': { transform: 'scale3d(1, 1, 1)' }
+        },
+        'party': {
+          '0%': { transform: 'scale(1.05) translateY(0) rotate(-1deg)' },
+          '25%': { transform: 'scale(1.1) translateY(-5px) rotate(1deg)' },
+          '50%': { transform: 'scale(1.05) translateY(0) rotate(0deg)' },
+          '75%': { transform: 'scale(1.1) translateY(-5px) rotate(-1deg)' },
+          '100%': { transform: 'scale(1.05) translateY(0) rotate(1deg)' }
+        },
+        'boing-in': {
+          '0%': {
+            opacity: '0',
+            transform: 'scale(0.3) translateY(20px)',
+          },
+          '50%': {
+            opacity: '1',
+            transform: 'scale(1.05) translateY(0)',
+          },
+          '70%': {
+            transform: 'scale(0.9) translateY(0)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'scale(1) translateY(0)',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'tada': 'tada 1s ease-in-out',
+        'party': 'party 1.5s ease-in-out infinite',
+        'boing-in': 'boing-in 0.5s ease-out forwards',
       },
     },
   },

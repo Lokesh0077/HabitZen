@@ -45,7 +45,7 @@ export function HabitPage() {
           </CardHeader>
           <CardContent>
             <Progress value={progress} className="h-3" />
-            {progress === 100 && habits.length > 0 && <p className="text-center mt-4 text-primary font-semibold">🎉 All habits completed! Great job! 🎉</p>}
+            {progress === 100 && habits.length > 0 && <p className="text-center mt-4 text-primary font-semibold animate-party">🎉 All habits completed! Great job! 🎉</p>}
           </CardContent>
         </Card>
 
@@ -87,18 +87,22 @@ export function HabitPage() {
               <p className="text-muted-foreground mt-2">Start by adding a new habit above.</p>
             </Card>
           ) : (
-            sortedHabits.map(habit => {
+            sortedHabits.map((habit, index) => {
               const isCompleted = habit.completions[today];
               const streak = calculateStreak(habit.completions);
               return (
-                <Card key={habit.id} className="flex items-center p-4 transition-all duration-300 hover:shadow-md animate-in fade-in">
+                <Card 
+                  key={habit.id}
+                  className="flex items-center p-4 transition-all duration-300 hover:shadow-md animate-boing-in"
+                  style={{ animationDelay: `${index * 75}ms`, opacity: 0 }}
+                >
                   <Button
                     variant={isCompleted ? 'default' : 'outline'}
                     size="icon"
                     className={`w-12 h-12 rounded-full transition-all duration-300 ${isCompleted ? 'bg-primary text-primary-foreground' : 'bg-transparent'}`}
                     onClick={() => toggleHabit(habit.id)}
                   >
-                    <Check className={`transition-transform duration-300 ${isCompleted ? 'scale-125' : 'scale-100'}`} />
+                    <Check className={`transition-transform duration-300 ${isCompleted ? 'animate-tada' : ''}`} />
                   </Button>
                   <div className="flex-grow ml-4">
                     <p className={`font-semibold text-lg ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>{habit.name}</p>
