@@ -34,11 +34,11 @@ export function HabitPage() {
     <div className="flex justify-center w-full min-h-screen p-4 font-body sm:p-6 md:p-8">
       <div className="w-full max-w-2xl space-y-6">
         <header className="text-center">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">HabitZen</h1>
-          <p className="mt-2 text-muted-foreground">Your daily companion for building better habits.</p>
+          <h1 className="text-4xl font-bold tracking-tighter md:text-6xl text-primary">HabitZen</h1>
+          <p className="mt-2 text-muted-foreground">The future of habit tracking is here.</p>
         </header>
 
-        <Card className="shadow-lg bg-card/80 border-primary/20">
+        <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
           <CardHeader>
             <CardTitle>Today's Progress</CardTitle>
             <CardDescription>{completedCount} of {habits.length} habits completed.</CardDescription>
@@ -49,7 +49,7 @@ export function HabitPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg bg-card/80 border-primary/20">
+        <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
           <CardHeader>
             <CardTitle>Add New Habit</CardTitle>
           </CardHeader>
@@ -82,7 +82,7 @@ export function HabitPage() {
                 <Skeleton className="w-full h-24" />
             </div>
           ) : habits.length === 0 ? (
-            <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed shadow-none bg-card/70">
+            <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed shadow-none bg-card/30 backdrop-blur-md border-white/10">
               <h3 className="text-xl font-semibold">No habits yet!</h3>
               <p className="mt-2 text-muted-foreground">Start by adding a new habit above.</p>
             </Card>
@@ -93,7 +93,7 @@ export function HabitPage() {
               return (
                 <Card 
                   key={habit.id}
-                  className="flex items-center p-4 transition-all duration-300 bg-card/80 hover:shadow-md animate-boing-in border-primary/20"
+                  className="flex items-center p-4 transition-all duration-300 hover:shadow-md animate-boing-in border-primary/20 bg-card/30 backdrop-blur-md"
                   style={{ animationDelay: `${index * 75}ms`, opacity: 0 }}
                 >
                   <Button

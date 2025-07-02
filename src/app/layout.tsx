@@ -20,6 +20,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
+        <div 
+            className="fixed inset-0 -z-10 h-full w-full bg-cover bg-center" 
+            style={{backgroundImage: "url('https://placehold.co/1920x1080.png')"}}
+            data-ai-hint="abstract blue futuristic"
+        />
+        <div className="fixed inset-0 -z-10 h-full w-full bg-background/70" />
         {children}
         <Toaster />
       </body>
