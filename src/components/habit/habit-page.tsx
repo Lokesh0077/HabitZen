@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles, RefreshCw } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { EditHabitDialog } from './edit-habit-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,58 +52,57 @@ export function HabitPage() {
   const completedCount = habitsForToday.filter(h => h.completions[today]).length;
   const progress = habitsForToday.length > 0 ? (completedCount / habitsForToday.length) * 100 : 0;
   
-  useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
+  const refreshCoachMessage = async () => {
+    if (!isLoaded) return;
+    setCoachLoading(true);
+    try {
+      let longestStreak = 0;
+      let longestStreakHabitName: string | undefined = undefined;
 
-    const handler = setTimeout(async () => {
-      setCoachLoading(true);
-      try {
-        let longestStreak = 0;
-        let longestStreakHabitName: string | undefined = undefined;
-
-        habits.forEach(habit => {
-          const streak = calculateStreak(habit.completions);
-          if (streak > longestStreak) {
-            longestStreak = streak;
-            longestStreakHabitName = habit.name;
-          }
-        });
-        
-        const todaysHabitsForAI = habitsForToday.map(habit => ({
-            name: habit.name,
-            completed: !!habit.completions[today]
-        }));
-
-        const result = await getMotivationalMessage({
-          totalHabitsToday: habitsForToday.length,
-          longestStreak,
-          longestStreakHabitName,
-          todaysHabits: todaysHabitsForAI,
-        });
-        
-        if (result?.message) {
-            setCoachMessage(result.message);
-        } else {
-            setCoachMessage("Let's make today a great day for habits!");
+      habits.forEach(habit => {
+        const streak = calculateStreak(habit.completions);
+        if (streak > longestStreak) {
+          longestStreak = streak;
+          longestStreakHabitName = habit.name;
         }
-      } catch (error) {
-        console.error("Failed to get motivational message:", error);
-        if (error instanceof Error && error.message.includes('429')) {
-          setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
-        } else {
-          setCoachMessage("Keep up the great work! Every step counts.");
-        }
-      } finally {
-        setCoachLoading(false);
+      });
+      
+      const todaysHabitsForAI = habitsForToday.map(habit => ({
+          name: habit.name,
+          completed: !!habit.completions[today]
+      }));
+
+      const result = await getMotivationalMessage({
+        totalHabitsToday: habitsForToday.length,
+        longestStreak,
+        longestStreakHabitName,
+        todaysHabits: todaysHabitsForAI,
+      });
+      
+      if (result?.message) {
+          setCoachMessage(result.message);
+      } else {
+          setCoachMessage("Let's make today a great day for habits!");
       }
-    }, 1000); // 1-second debounce to prevent rate-limiting
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [habits, isLoaded, calculateStreak, today, habitsForToday]);
+    } catch (error) {
+      console.error("Failed to get motivational message:", error);
+      if (error instanceof Error && error.message.includes('429')) {
+        setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
+      } else {
+        setCoachMessage("Keep up the great work! Every step counts.");
+      }
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (isLoaded) {
+      refreshCoachMessage();
+    }
+  // This is intentional. We only want to fetch the message when the app first loads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded]);
 
 
   const handleAddHabit = (e: React.FormEvent) => {
@@ -197,6 +196,10 @@ export function HabitPage() {
                         <CardDescription>Your personal motivational partner.</CardDescription>
                     </div>
                 </div>
+                <Button variant="ghost" size="icon" onClick={refreshCoachMessage} disabled={isCoachLoading}>
+                    <RefreshCw className={`w-5 h-5 ${isCoachLoading ? 'animate-spin' : ''}`} />
+                    <span className="sr-only">Refresh coach message</span>
+                </Button>
             </CardHeader>
             <CardContent>
                 {isCoachLoading ? (
