@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
@@ -29,8 +29,6 @@ export function HabitPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [coachMessage, setCoachMessage] = useState('');
   const [isCoachLoading, setCoachLoading] = useState(true);
-  
-  const coachFetchRef = useRef(false);
 
   const today = getTodayDateString();
   const todayJsDate = new Date();
@@ -98,14 +96,17 @@ export function HabitPage() {
     }
   }, [isLoaded, habits, calculateStreak, today, habitsForToday]);
 
-
   useEffect(() => {
-    if (isLoaded && !coachFetchRef.current) {
-        coachFetchRef.current = true;
-        fetchCoachMessage();
-    }
-  }, [isLoaded, fetchCoachMessage]);
+    if (!isLoaded) return;
 
+    // Debounce the call to fetch a new message.
+    // This will trigger after the user stops interacting with habits for 1.5 seconds.
+    const debounceTimer = setTimeout(() => {
+      fetchCoachMessage();
+    }, 1500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [fetchCoachMessage, isLoaded]);
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,22 +199,13 @@ export function HabitPage() {
                         <CardDescription>Your personal motivational partner.</CardDescription>
                     </div>
                 </div>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={fetchCoachMessage} disabled={isCoachLoading}>
-                                <RefreshCw className={`w-4 h-4 ${isCoachLoading ? 'animate-spin' : ''}`} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Get new advice</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
             </CardHeader>
             <CardContent>
                 {isCoachLoading ? (
-                    <Skeleton className="w-3/4 h-5" />
+                    <div className="space-y-2">
+                        <Skeleton className="w-3/4 h-5" />
+                        <Skeleton className="w-1/2 h-5" />
+                    </div>
                 ) : (
                     <p className="italic text-muted-foreground">"{coachMessage}"</p>
                 )}
