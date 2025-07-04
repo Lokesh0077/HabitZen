@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '../theme-toggle';
 import { getMotivationalMessage } from '@/ai/flows/get-motivational-message';
+import { HabitStats } from './habit-stats';
 
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -237,6 +238,8 @@ export function HabitPage() {
                 )}
             </CardContent>
         </Card>
+
+        {isLoaded && <HabitStats habits={habits} />}
 
         <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
           <CardHeader>
