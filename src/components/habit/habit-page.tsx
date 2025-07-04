@@ -13,6 +13,7 @@ import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays,
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ThemeToggle } from '../theme-toggle';
 
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -103,9 +104,12 @@ export function HabitPage() {
   return (
     <div className="flex justify-center w-full min-h-screen p-4 font-body sm:p-6 md:p-8">
       <div className="w-full max-w-2xl space-y-6">
-        <header className="text-center">
+        <header className="relative text-center">
           <h1 className="text-4xl font-bold tracking-tighter md:text-6xl text-primary">HabitZen</h1>
           <p className="mt-2 text-muted-foreground">The future of habit tracking is here.</p>
+          <div className="absolute top-0 right-0">
+            <ThemeToggle />
+          </div>
         </header>
 
         <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
