@@ -77,22 +77,46 @@ export const useHabits = () => {
 
     const interval = setInterval(() => {
       const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       const today = getTodayDateString();
-      const todayJsDate = new Date();
-      const dayOfWeekIndex = todayJsDate.getDay();
+      const dayOfWeekIndex = now.getDay();
       const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const todayDayName = daysOfWeek[dayOfWeekIndex];
 
       habits.forEach(habit => {
-        const isForToday = !habit.days || habit.days.length === 0 || habit.days.includes(todayDayName);
         const isCompleted = habit.completions[today];
+        if (isCompleted) {
+          return;
+        }
 
-        if (habit.time === currentTime && isForToday && !isCompleted) {
-          new Notification('HabitZen Reminder', {
-            body: `It's time for your habit: "${habit.name}"`,
-            icon: '/favicon.ico'
-          });
+        const isForToday = !habit.days || habit.days.length === 0 || habit.days.includes(todayDayName);
+        if (!isForToday) {
+          return;
+        }
+        
+        if (habit.time) {
+          const [hours, minutes] = habit.time.split(':').map(Number);
+          
+          const reminderTime = new Date();
+          reminderTime.setHours(hours, minutes, 0, 0);
+          reminderTime.setMinutes(reminderTime.getMinutes() - 5);
+
+          if (
+            now.getHours() === reminderTime.getHours() &&
+            now.getMinutes() === reminderTime.getMinutes()
+          ) {
+            new Notification('HabitZen Reminder', {
+              body: "Almost time! Your habit '" + habit.name + "' is in 5 minutes.",
+              icon: '/favicon.ico',
+            });
+          }
+        } else {
+          const currentTime = "" + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+          if (currentTime === '12:00' || currentTime === '23:00') {
+            new Notification('HabitZen Reminder', {
+              body: "Don't forget to complete your habit: '" + habit.name + "'",
+              icon: '/favicon.ico',
+            });
+          }
         }
       });
     }, 60000); // Check every minute
