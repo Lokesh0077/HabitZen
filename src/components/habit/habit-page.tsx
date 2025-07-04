@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles, RefreshCw } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { EditHabitDialog } from './edit-habit-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +29,9 @@ export function HabitPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [coachMessage, setCoachMessage] = useState('');
   const [isCoachLoading, setCoachLoading] = useState(true);
+
+  const isInitialMount = useRef(true);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const today = getTodayDateString();
   const todayJsDate = new Date();
@@ -96,14 +99,40 @@ export function HabitPage() {
     }
   };
   
+  // Effect for initial load and for refreshing when the day changes
   useEffect(() => {
     if (isLoaded) {
       refreshCoachMessage();
     }
-  // This is intentional. We only want to fetch the message when the app first loads.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded]);
+  }, [isLoaded, today]);
 
+  // Effect for auto-refreshing on habit changes (debounced)
+  useEffect(() => {
+    // Skip the initial render, as the effect above handles it.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // If a timer is already running, clear it.
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Set a new timeout to run the refresh function after a delay.
+    debounceTimeoutRef.current = setTimeout(() => {
+      refreshCoachMessage();
+    }, 1200); // 1.2-second delay to bundle rapid changes and avoid API errors.
+
+    // Cleanup function to clear the timeout if the component unmounts.
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits]); // This effect runs only when the habits array changes.
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,16 +219,12 @@ export function HabitPage() {
         <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                 <div className="flex items-center gap-4">
-                    <Sparkles className="w-8 h-8 text-primary" />
+                    <Sparkles className={`w-8 h-8 text-primary ${isCoachLoading ? 'animate-spin' : ''}`} />
                     <div>
                         <CardTitle>AI Coach</CardTitle>
                         <CardDescription>Your personal motivational partner.</CardDescription>
                     </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={refreshCoachMessage} disabled={isCoachLoading}>
-                    <RefreshCw className={`w-5 h-5 ${isCoachLoading ? 'animate-spin' : ''}`} />
-                    <span className="sr-only">Refresh coach message</span>
-                </Button>
             </CardHeader>
             <CardContent>
                 {isCoachLoading ? (
