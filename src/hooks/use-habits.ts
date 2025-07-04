@@ -13,19 +13,15 @@ const getTodayDateString = () => {
 
 const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
-  const today = new Date();
-  let currentDate = new Date(today);
+  let currentDate = new Date();
 
-  const todayStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
-    .toISOString()
-    .split('T')[0];
-
-  // If today's habit is not completed, we start counting from yesterday.
+  // If today is not completed, the current streak is based on days before today.
+  const todayStr = getTodayDateString();
   if (!completions[todayStr]) {
     currentDate.setDate(currentDate.getDate() - 1);
   }
 
-  // Now count backwards from `currentDate`
+  // Count backwards from `currentDate`
   while (true) {
     const dateStr = new Date(
       currentDate.getTime() - currentDate.getTimezoneOffset() * 60000
@@ -113,7 +109,6 @@ export const useHabits = () => {
           ) {
             new Notification('HabitZen Reminder', {
               body: "Almost time! Your habit '" + habit.name + "' is in 5 minutes.",
-              icon: '/favicon.ico',
             });
           }
         } else {
@@ -121,7 +116,6 @@ export const useHabits = () => {
           if (currentTime === '12:00' || currentTime === '23:00') {
             new Notification('HabitZen Reminder', {
               body: "Don't forget to complete your habit: '" + habit.name + "'",
-              icon: '/favicon.ico',
             });
           }
         }
