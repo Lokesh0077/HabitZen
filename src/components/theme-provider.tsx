@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-type Theme = "light" | "dark" | "forest-green"
+type Theme = "light" | "dark" | "forest-green" | "ocean-blue" | "desert-sunset" | "sakura-pink";
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -43,11 +43,14 @@ export function ThemeProvider({
   React.useEffect(() => {
     const root = window.document.documentElement
 
-    root.classList.remove("light", "dark", "forest-green")
+    root.classList.remove("light", "dark", "forest-green", "ocean-blue", "desert-sunset", "sakura-pink")
 
-    if (theme === "forest-green") {
+    if (theme === "forest-green" || theme === "ocean-blue" || theme === "desert-sunset") {
         root.classList.add("dark")
-        root.classList.add("forest-green")
+        root.classList.add(theme)
+    } else if (theme === "sakura-pink") {
+        root.classList.add("light")
+        root.classList.add(theme)
     } else {
         root.classList.add(theme)
     }

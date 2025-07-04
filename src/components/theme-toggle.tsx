@@ -36,6 +36,18 @@ export function ThemeToggle() {
           Forest Green
           {theme === 'forest-green' && <Check className="ml-auto h-4 w-4" />}
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('ocean-blue')}>
+          Ocean Blue
+          {theme === 'ocean-blue' && <Check className="ml-auto h-4 w-4" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('desert-sunset')}>
+          Desert Sunset
+          {theme === 'desert-sunset' && <Check className="ml-auto h-4 w-4" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('sakura-pink')}>
+          Sakura Pink
+          {theme === 'sakura-pink' && <Check className="ml-auto h-4 w-4" />}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
