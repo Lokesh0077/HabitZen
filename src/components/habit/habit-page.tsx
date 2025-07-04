@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
@@ -9,12 +9,13 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { EditHabitDialog } from './edit-habit-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '../theme-toggle';
+import { getMotivationalMessage } from '@/ai/flows/get-motivational-message';
 
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -26,7 +27,8 @@ export function HabitPage() {
   const [isSuggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-
+  const [coachMessage, setCoachMessage] = useState('');
+  const [isCoachLoading, setCoachLoading] = useState(true);
 
   const today = getTodayDateString();
   const todayJsDate = new Date();
@@ -49,6 +51,47 @@ export function HabitPage() {
 
   const completedCount = habitsForToday.filter(h => h.completions[today]).length;
   const progress = habitsForToday.length > 0 ? (completedCount / habitsForToday.length) * 100 : 0;
+  
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const fetchCoachMessage = async () => {
+      setCoachLoading(true);
+      try {
+        let longestStreak = 0;
+        let longestStreakHabitName: string | undefined = undefined;
+
+        habits.forEach(habit => {
+          const streak = calculateStreak(habit.completions);
+          if (streak > longestStreak) {
+            longestStreak = streak;
+            longestStreakHabitName = habit.name;
+          }
+        });
+
+        const result = await getMotivationalMessage({
+          completedHabitsToday: completedCount,
+          totalHabitsToday: habitsForToday.length,
+          longestStreak,
+          longestStreakHabitName,
+        });
+        
+        if (result?.message) {
+            setCoachMessage(result.message);
+        } else {
+            setCoachMessage("Let's make today a great day for habits!");
+        }
+      } catch (error) {
+        console.error("Failed to get motivational message:", error);
+        setCoachMessage("Keep up the great work! Every step counts."); 
+      } finally {
+        setCoachLoading(false);
+      }
+    };
+
+    fetchCoachMessage();
+  }, [habits, isLoaded, completedCount, habitsForToday.length, calculateStreak]);
+
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +173,23 @@ export function HabitPage() {
             <Progress value={progress} className="h-3" />
             {progress === 100 && habitsForToday.length > 0 && <p className="mt-4 font-semibold text-center text-primary animate-party">🎉 All habits completed! Great job! 🎉</p>}
           </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                <Sparkles className="w-8 h-8 text-primary" />
+                <div>
+                    <CardTitle>AI Coach</CardTitle>
+                    <CardDescription>Your personal motivational partner.</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {isCoachLoading ? (
+                    <Skeleton className="w-3/4 h-5" />
+                ) : (
+                    <p className="italic text-muted-foreground">"{coachMessage}"</p>
+                )}
+            </CardContent>
         </Card>
 
         <Card className="shadow-lg border-primary/20 bg-card/30 backdrop-blur-md">
