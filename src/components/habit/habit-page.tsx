@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles, RefreshCw } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil, Sparkles } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
 import { EditHabitDialog } from './edit-habit-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,55 +52,59 @@ export function HabitPage() {
   const completedCount = habitsForToday.filter(h => h.completions[today]).length;
   const progress = habitsForToday.length > 0 ? (completedCount / habitsForToday.length) * 100 : 0;
   
-  const fetchCoachMessage = useCallback(async () => {
-    if (!isLoaded) return;
-    setCoachLoading(true);
-    try {
-      let longestStreak = 0;
-      let longestStreakHabitName: string | undefined = undefined;
-
-      habits.forEach(habit => {
-        const streak = calculateStreak(habit.completions);
-        if (streak > longestStreak) {
-          longestStreak = streak;
-          longestStreakHabitName = habit.name;
-        }
-      });
-      
-      const todaysHabitsForAI = habitsForToday.map(habit => ({
-          name: habit.name,
-          completed: !!habit.completions[today]
-      }));
-
-      const result = await getMotivationalMessage({
-        totalHabitsToday: habitsForToday.length,
-        longestStreak,
-        longestStreakHabitName,
-        todaysHabits: todaysHabitsForAI,
-      });
-      
-      if (result?.message) {
-          setCoachMessage(result.message);
-      } else {
-          setCoachMessage("Let's make today a great day for habits!");
-      }
-    } catch (error) {
-      console.error("Failed to get motivational message:", error);
-      if (error instanceof Error && error.message.includes('429')) {
-        setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
-      } else {
-        setCoachMessage("Keep up the great work! Every step counts.");
-      }
-    } finally {
-      setCoachLoading(false);
-    }
-  }, [isLoaded, habits, calculateStreak, today, habitsForToday]);
-
   useEffect(() => {
-    if (isLoaded) {
-      fetchCoachMessage();
+    if (!isLoaded) {
+      return;
     }
-  }, [fetchCoachMessage, isLoaded]);
+
+    const handler = setTimeout(async () => {
+      setCoachLoading(true);
+      try {
+        let longestStreak = 0;
+        let longestStreakHabitName: string | undefined = undefined;
+
+        habits.forEach(habit => {
+          const streak = calculateStreak(habit.completions);
+          if (streak > longestStreak) {
+            longestStreak = streak;
+            longestStreakHabitName = habit.name;
+          }
+        });
+        
+        const todaysHabitsForAI = habitsForToday.map(habit => ({
+            name: habit.name,
+            completed: !!habit.completions[today]
+        }));
+
+        const result = await getMotivationalMessage({
+          totalHabitsToday: habitsForToday.length,
+          longestStreak,
+          longestStreakHabitName,
+          todaysHabits: todaysHabitsForAI,
+        });
+        
+        if (result?.message) {
+            setCoachMessage(result.message);
+        } else {
+            setCoachMessage("Let's make today a great day for habits!");
+        }
+      } catch (error) {
+        console.error("Failed to get motivational message:", error);
+        if (error instanceof Error && error.message.includes('429')) {
+          setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
+        } else {
+          setCoachMessage("Keep up the great work! Every step counts.");
+        }
+      } finally {
+        setCoachLoading(false);
+      }
+    }, 1000); // 1-second debounce to prevent rate-limiting
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [habits, isLoaded, calculateStreak, today, habitsForToday]);
+
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
