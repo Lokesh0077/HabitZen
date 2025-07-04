@@ -68,12 +68,17 @@ export function HabitPage() {
             longestStreakHabitName = habit.name;
           }
         });
+        
+        const todaysHabitsForAI = habitsForToday.map(habit => ({
+            name: habit.name,
+            completed: !!habit.completions[today]
+        }));
 
         const result = await getMotivationalMessage({
-          completedHabitsToday: completedCount,
           totalHabitsToday: habitsForToday.length,
           longestStreak,
           longestStreakHabitName,
+          todaysHabits: todaysHabitsForAI,
         });
         
         if (result?.message) {
@@ -90,7 +95,7 @@ export function HabitPage() {
     };
 
     fetchCoachMessage();
-  }, [habits, isLoaded, completedCount, habitsForToday.length, calculateStreak]);
+  }, [habits, isLoaded, completedCount, habitsForToday, calculateStreak, today]);
 
 
   const handleAddHabit = (e: React.FormEvent) => {
