@@ -12,25 +12,35 @@ const getTodayDateString = () => {
 };
 
 const calculateStreak = (completions: Record<string, boolean>): number => {
-    let streak = 0;
-    const today = new Date();
-    
-    const todayStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    if (!completions[todayStr]) {
-        return 0;
-    }
+  let streak = 0;
+  const today = new Date();
+  let currentDate = new Date(today);
 
-    let currentDate = today;
-    while (true) {
-        const dateStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        if (completions[dateStr]) {
-            streak++;
-            currentDate.setDate(currentDate.getDate() - 1);
-        } else {
-            break;
-        }
+  const todayStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split('T')[0];
+
+  // If today's habit is not completed, we start counting from yesterday.
+  if (!completions[todayStr]) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  // Now count backwards from `currentDate`
+  while (true) {
+    const dateStr = new Date(
+      currentDate.getTime() - currentDate.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .split('T')[0];
+      
+    if (completions[dateStr]) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
     }
-    return streak;
+  }
+  return streak;
 };
 
 
