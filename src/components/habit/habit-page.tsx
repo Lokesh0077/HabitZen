@@ -97,15 +97,9 @@ export function HabitPage() {
   }, [isLoaded, habits, calculateStreak, today, habitsForToday]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    // Debounce the call to fetch a new message.
-    // This will trigger after the user stops interacting with habits for 1.5 seconds.
-    const debounceTimer = setTimeout(() => {
+    if (isLoaded) {
       fetchCoachMessage();
-    }, 1500);
-
-    return () => clearTimeout(debounceTimer);
+    }
   }, [fetchCoachMessage, isLoaded]);
 
   const handleAddHabit = (e: React.FormEvent) => {
