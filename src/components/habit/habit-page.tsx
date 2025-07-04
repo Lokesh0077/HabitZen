@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import type { Habit } from '@/lib/types';
 import { useHabits } from '@/hooks/use-habits';
 import type { Day } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,8 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell } from 'lucide-react';
+import { Flame, Check, MoreHorizontal, Trash2, Wand2, Plus, Clock, CalendarDays, Bell, Pencil } from 'lucide-react';
 import { HabitSuggestionsDialog } from './habit-suggestions-dialog';
+import { EditHabitDialog } from './edit-habit-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '../theme-toggle';
@@ -18,11 +19,14 @@ import { ThemeToggle } from '../theme-toggle';
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function HabitPage() {
-  const { habits, addHabit, addSuggestedHabits, toggleHabit, deleteHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission } = useHabits();
+  const { habits, addHabit, addSuggestedHabits, toggleHabit, deleteHabit, editHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission } = useHabits();
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitTime, setNewHabitTime] = useState('');
   const [selectedDays, setSelectedDays] = useState<Day[]>([]);
   const [isSuggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+
 
   const today = getTodayDateString();
   const todayJsDate = new Date();
@@ -57,6 +61,11 @@ export function HabitPage() {
       setNewHabitTime('');
       setSelectedDays([]);
     }
+  };
+
+  const handleOpenEditDialog = (habit: Habit) => {
+    setEditingHabit(habit);
+    setEditDialogOpen(true);
   };
 
   const toggleDay = (day: Day) => {
@@ -176,6 +185,7 @@ export function HabitPage() {
         </Card>
         
         <HabitSuggestionsDialog open={isSuggestionDialogOpen} onOpenChange={setSuggestionDialogOpen} onAddHabits={addSuggestedHabits} />
+        <EditHabitDialog habit={editingHabit} open={isEditDialogOpen} onOpenChange={setEditDialogOpen} onSave={editHabit} />
 
         <div className="space-y-3">
           <h2 className="text-2xl font-bold font-headline text-primary">My Habits for Today</h2>
@@ -236,6 +246,10 @@ export function HabitPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                      <DropdownMenuItem onSelect={() => handleOpenEditDialog(habit)}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => deleteHabit(habit.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete

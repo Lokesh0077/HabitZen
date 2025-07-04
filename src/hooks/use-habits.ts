@@ -12,28 +12,25 @@ const getTodayDateString = () => {
 };
 
 const calculateStreak = (completions: Record<string, boolean>): number => {
-  let streak = 0;
-  let currentDate = new Date();
-
-  // If the habit isn't done today, the current streak is what it was yesterday.
-  // So we start counting from yesterday.
-  const todayStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  if (!completions[todayStr]) {
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-
-  // Count backwards from the starting date (today or yesterday)
-  while (true) {
-    const dateStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    if (completions[dateStr]) {
-      streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
-    } else {
-      break;
+    let streak = 0;
+    const today = new Date();
+    
+    const todayStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    if (!completions[todayStr]) {
+        return 0;
     }
-  }
 
-  return streak;
+    let currentDate = today;
+    while (true) {
+        const dateStr = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        if (completions[dateStr]) {
+            streak++;
+            currentDate.setDate(currentDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    return streak;
 };
 
 
@@ -166,6 +163,22 @@ export const useHabits = () => {
     setHabits(prev => prev.filter(habit => habit.id !== id));
   }, []);
 
+  const editHabit = useCallback((id: string, updates: { name: string; time?: string; days?: Day[] }) => {
+    setHabits(prev =>
+      prev.map(habit => {
+        if (habit.id === id) {
+          return {
+            ...habit,
+            name: updates.name.trim(),
+            time: updates.time || undefined,
+            days: updates.days && updates.days.length > 0 ? updates.days : undefined,
+          };
+        }
+        return habit;
+      })
+    );
+  }, []);
+
   const toggleHabit = useCallback((id: string) => {
     const today = getTodayDateString();
     setHabits(prev =>
@@ -180,7 +193,7 @@ export const useHabits = () => {
     );
   }, []);
 
-  return { habits, addHabit, addSuggestedHabits, deleteHabit, toggleHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission };
+  return { habits, addHabit, addSuggestedHabits, deleteHabit, toggleHabit, editHabit, isLoaded, calculateStreak, getTodayDateString, notificationPermission, requestNotificationPermission };
 };
 
 // Dummy uuidv4 implementation if 'uuid' package is not available. For browser environment it is better to use crypto.randomUUID
