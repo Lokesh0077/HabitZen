@@ -88,7 +88,11 @@ export function HabitPage() {
     } catch (error) {
       console.error("Failed to get motivational message:", error);
       if (error instanceof Error && error.message.includes('429')) {
-        setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
+        if (error.message.includes('PerDay')) {
+            setCoachMessage("The AI Coach has been very busy today and has reached its daily chat limit. It will be back tomorrow!");
+        } else {
+            setCoachMessage("The coach is thinking a lot right now! Please try again in a moment.");
+        }
       } else {
         setCoachMessage("Keep up the great work! Every step counts.");
       }
