@@ -15,22 +15,19 @@ const getTodayDateString = () => {
 
 const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
-  let currentDate = new Date();
+  const today = new Date();
+  
+  // Start checking from today's date.
+  let currentDate = new Date(today);
 
-  const todayStr = getTodayDateString();
+  // If today isn't completed, the streak might have ended yesterday.
+  // So, we start checking from yesterday instead.
+  const todayStr = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   if (!completions[todayStr]) {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = new Date(yesterday.getTime() - yesterday.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    if (completions[yesterdayStr]) {
-       currentDate.setDate(currentDate.getDate() - 1);
-    } else {
-        if(completions[todayStr]) {
-            streak++;
-        }
-    }
+    currentDate.setDate(currentDate.getDate() - 1);
   }
 
+  // Loop backwards from `currentDate`
   while (true) {
     const dateStr = new Date(
       currentDate.getTime() - currentDate.getTimezoneOffset() * 60000
@@ -40,8 +37,9 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
       
     if (completions[dateStr]) {
       streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
+      currentDate.setDate(currentDate.getDate() - 1); // Go to the previous day
     } else {
+      // The streak is broken, so we stop counting.
       break;
     }
   }
@@ -95,7 +93,7 @@ export const useHabits = () => {
             console.log('Notification permission granted.');
 
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
-            if (!vapidKey || vapidKey === 'REPLACE_WITH_YOUR_FCM_VAPID_KEY') {
+            if (!vapidKey || vapidKey === 'REPLACE_WITH_YOUR_FCM_VAPID_KEY' || vapidKey === 'REPLACE_WITH_YOUR_FIREBASE_VAPID_KEY') {
                 console.error('VAPID key not found. Please set NEXT_PUBLIC_VAPID_KEY in your .env file.');
                 alert('Notification setup is incomplete. Please configure the VAPID key from your Firebase project settings.');
                 return;
