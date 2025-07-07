@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ThemeToggle } from '../theme-toggle';
 import { getMotivationalMessage } from '@/ai/flows/get-motivational-message';
 import { HabitStats } from './habit-stats';
+import { useToast } from '@/hooks/use-toast';
 
 const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -30,6 +31,8 @@ export function HabitPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [coachMessage, setCoachMessage] = useState('');
   const [isCoachLoading, setCoachLoading] = useState(true);
+  const [notifiedHabitIds, setNotifiedHabitIds] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const today = getTodayDateString();
   const todayJsDate = new Date();
@@ -108,6 +111,33 @@ export function HabitPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, today]);
+
+  // Reset notified habits when the day changes
+  useEffect(() => {
+    setNotifiedHabitIds([]);
+  }, [today]);
+
+  // Effect for in-app reminder notifications
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const intervalId = setInterval(() => {
+      const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      habitsForToday.forEach(habit => {
+        if (habit.time === currentTime && !habit.completions[today] && !notifiedHabitIds.includes(habit.id)) {
+          toast({
+            title: '🔔 Habit Reminder',
+            description: `It's time for: "${habit.name}"`,
+          });
+          setNotifiedHabitIds(prev => [...prev, habit.id]);
+        }
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, habitsForToday, today, notifiedHabitIds, toast]);
+
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
