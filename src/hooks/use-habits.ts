@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Habit, Day } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const getTodayDateString = () => {
   const today = new Date();
@@ -39,6 +38,18 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   return streak;
 };
 
+// Helper to convert base64 string to Uint8Array. This is needed for the push subscription.
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -73,70 +84,55 @@ export const useHabits = () => {
     }
   }, [habits, isLoaded]);
 
-  useEffect(() => {
-    if (notificationPermission !== 'granted' || typeof window === 'undefined' || !('Notification' in window)) {
-      return;
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Push notifications are not supported in this browser.');
+        return;
     }
 
-    const interval = setInterval(() => {
-      const now = new Date();
-      const today = getTodayDateString();
-      const dayOfWeekIndex = now.getDay();
-      const daysOfWeek: Day[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const todayDayName = daysOfWeek[dayOfWeekIndex];
+    // Ask for permission
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
 
-      habits.forEach(habit => {
-        const isCompleted = habit.completions[today];
-        if (isCompleted) {
-          return;
-        }
+    if (permission === 'granted') {
+        console.log('Notification permission granted.');
 
-        const isForToday = !habit.days || habit.days.length === 0 || habit.days.includes(todayDayName);
-        if (!isForToday) {
-          return;
-        }
-        
-        if (habit.time) {
-          const [hours, minutes] = habit.time.split(':').map(Number);
-          
-          const reminderTime = new Date();
-          reminderTime.setHours(hours, minutes, 0, 0);
-          reminderTime.setMinutes(reminderTime.getMinutes() - 5);
+        try {
+            // Register the service worker
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker registered:', registration);
 
-          if (
-            now.getHours() === reminderTime.getHours() &&
-            now.getMinutes() === reminderTime.getMinutes()
-          ) {
-            new Notification('HabitZen Reminder', {
-              body: "Almost time! Your habit '" + habit.name + "' is in 5 minutes.",
+            // Get the VAPID public key from environment variables
+            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!vapidPublicKey || vapidPublicKey === 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY') {
+                console.error('VAPID public key not found. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY in your .env file.');
+                alert('Notification setup is incomplete. Please configure the VAPID public key.');
+                return;
+            }
+            
+            // Subscribe the user
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
             });
-          }
-        } else {
-          const currentTime = "" + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-          if (currentTime === '12:00' || currentTime === '23:00') {
-            new Notification('HabitZen Reminder', {
-              body: "Don't forget to complete your habit: '" + habit.name + "'",
-            });
-          }
+            console.log('Push Subscription created:', subscription);
+
+            // Here you would send the subscription to your backend server
+            // The backend would store this subscription and use it to send push notifications.
+            // For example:
+            // await fetch('/api/save-subscription', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(subscription),
+            // });
+            console.log('Subscription would be sent to a backend, but this is a placeholder.');
+
+        } catch (error) {
+            console.error('Failed to register service worker or subscribe:', error);
+            alert('Failed to set up notifications. See console for details.');
         }
-      });
-    }, 60000); // Check every minute
-
-    return () => clearInterval(interval);
-  }, [habits, notificationPermission]);
-
-  const requestNotificationPermission = useCallback(async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        setNotificationPermission('granted');
-        return;
-      }
-      if (Notification.permission !== 'denied') {
-        const permission = await Notification.requestPermission();
-        setNotificationPermission(permission);
-      } else {
-        setNotificationPermission('denied');
-      }
+    } else {
+        console.log('Notification permission was denied.');
     }
   }, []);
 
@@ -201,7 +197,7 @@ export const useHabits = () => {
 };
 
 // Dummy uuidv4 implementation if 'uuid' package is not available. For browser environment it is better to use crypto.randomUUID
-const v4 = () => {
+const uuidv4 = () => {
     if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
     }
