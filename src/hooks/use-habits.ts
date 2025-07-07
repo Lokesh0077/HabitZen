@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Habit, Day } from '@/lib/types';
+import { app, messaging } from '@/lib/firebase';
+import { getToken } from 'firebase/messaging';
+
 
 const getTodayDateString = () => {
   const today = new Date();
@@ -14,13 +17,20 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   let streak = 0;
   let currentDate = new Date();
 
-  // If today is not completed, the current streak is based on days before today.
   const todayStr = getTodayDateString();
   if (!completions[todayStr]) {
-    currentDate.setDate(currentDate.getDate() - 1);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = new Date(yesterday.getTime() - yesterday.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    if (completions[yesterdayStr]) {
+       currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+        if(completions[todayStr]) {
+            streak++;
+        }
+    }
   }
 
-  // Count backwards from `currentDate`
   while (true) {
     const dateStr = new Date(
       currentDate.getTime() - currentDate.getTimezoneOffset() * 60000
@@ -37,19 +47,6 @@ const calculateStreak = (completions: Record<string, boolean>): number => {
   }
   return streak;
 };
-
-// Helper to convert base64 string to Uint8Array. This is needed for the push subscription.
-function urlBase64ToUint8Array(base64String: string) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
 
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -85,54 +82,49 @@ export const useHabits = () => {
   }, [habits, isLoaded]);
 
   const requestNotificationPermission = useCallback(async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (typeof window === 'undefined' || !messaging) {
         alert('Push notifications are not supported in this browser.');
         return;
     }
 
-    // Ask for permission
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
+    try {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
 
-    if (permission === 'granted') {
-        console.log('Notification permission granted.');
+        if (permission === 'granted') {
+            console.log('Notification permission granted.');
 
-        try {
-            // Register the service worker
-            const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker registered:', registration);
-
-            // Get the VAPID public key from environment variables
-            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-            if (!vapidPublicKey || vapidPublicKey === 'REPLACE_WITH_YOUR_PUBLIC_VAPID_KEY') {
-                console.error('VAPID public key not found. Please set NEXT_PUBLIC_VAPID_PUBLIC_KEY in your .env file.');
-                alert('Notification setup is incomplete. Please configure the VAPID public key.');
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
+            if (!vapidKey || vapidKey === 'REPLACE_WITH_YOUR_FCM_VAPID_KEY') {
+                console.error('VAPID key not found. Please set NEXT_PUBLIC_VAPID_KEY in your .env file.');
+                alert('Notification setup is incomplete. Please configure the VAPID key from your Firebase project settings.');
                 return;
             }
             
-            // Subscribe the user
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-            });
-            console.log('Push Subscription created:', subscription);
-
-            // Here you would send the subscription to your backend server
-            // The backend would store this subscription and use it to send push notifications.
-            // For example:
-            // await fetch('/api/save-subscription', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify(subscription),
-            // });
-            console.log('Subscription would be sent to a backend, but this is a placeholder.');
-
-        } catch (error) {
-            console.error('Failed to register service worker or subscribe:', error);
-            alert('Failed to set up notifications. See console for details.');
+            // Get the token
+            const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+            
+            if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                
+                // THIS IS WHERE YOU WOULD SEND THE TOKEN TO YOUR BACKEND
+                // For example:
+                // await fetch('/api/save-fcm-token', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ token: currentToken }),
+                // });
+                
+                console.log('FCM token registered. Backend integration is required to send notifications.');
+            } else {
+                console.log('No registration token available. Request permission to generate one.');
+            }
+        } else {
+            console.log('Notification permission denied.');
         }
-    } else {
-        console.log('Notification permission was denied.');
+    } catch (error) {
+        console.error('An error occurred while retrieving token. ', error);
+        alert('An error occurred while setting up notifications. See the console for details.')
     }
   }, []);
 
