@@ -52,8 +52,29 @@ export const useHabits = () => {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+        const firebaseConfig = {
+          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        };
+        const swUrl = `/firebase-messaging-sw.js?apiKey=${firebaseConfig.apiKey}&authDomain=${firebaseConfig.authDomain}&projectId=${firebaseConfig.projectId}&storageBucket=${firebaseConfig.storageBucket}&messagingSenderId=${firebaseConfig.messagingSenderId}&appId=${firebaseConfig.appId}`;
+        
+        navigator.serviceWorker
+            .register(swUrl)
+            .then(registration => {
+                console.log('Service Worker registration successful with scope: ', registration.scope);
+            })
+            .catch(err => {
+                console.log('Service Worker registration failed: ', err);
+            });
+    }
+
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
+        setNotificationPermission(Notification.permission);
     }
   }, []);
 
